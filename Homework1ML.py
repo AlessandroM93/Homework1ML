@@ -1,0 +1,279 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+import pandas as pd
+import re
+import random
+import shutil
+from numpy import array
+#from sklearn.model_selection import KFold
+from os import listdir
+from os.path import isfile, join
+import numpy as np
+import json
+import pickle
+from collections import Counter
+from mlxtend.plotting import plot_confusion_matrix
+import matplotlib.pyplot as plt
+from clint.textui import progress
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+# In[2]:
+
+
+def hash_tags(title,car):
+  ts =  shutil.get_terminal_size()
+  terminal_col=ts[0]
+  stringa=''
+  if(len(title)>0):
+    title=' '+title+' '
+    for i in range(int((terminal_col-len(title))/2)):
+      stringa+=car
+    
+    stringa+=title
+    for i in range(int((terminal_col-len(title))/2)):
+     stringa+=car
+    stringa+='\n\n' 
+    print(stringa)
+  else:
+   for i in range(terminal_col):
+     stringa+=car
+   stringa+='\n\n'
+   print(stringa)
+
+
+# In[3]:
+
+
+def csv_read(path):
+     F = open (path,'r')
+     line = F.readline()
+     hash_def=[]
+     type_def=[]
+     a=[]
+     while line!='' :
+                a=line.split(',')
+                hash_def.append(a[0])
+                type_def.append(a[1])
+                line = F.readline()
+
+     F.close()           
+     return (hash_def,type_def)
+
+
+# In[4]:
+
+
+path_feature = '/Users/Carmelo/Desktop/drebin/feature_vector3/'
+#path_feature = '/home/parallels/Documents/Homework/drebin/prova/'
+path_csv  = '/Users/Carmelo/Desktop/drebin/family.csv'
+
+list_files = [f for f in listdir(path_feature) if isfile(join(path_feature, f))]
+print("\n\nLOADING CVS ...  ",end='')
+
+out = csv_read(path_csv)
+hash_def = out[0]
+type_def = out[1]
+
+print("FATTO\n\n")
+percent_learning = 0.1
+percent_testing = 1 - percent_learning
+
+total_set = len(list_files)
+
+num_learn =int(percent_learning * total_set)
+num_test = int(percent_testing * total_set)
+
+
+malware_content_list=[]
+goodware_content_list=[]
+malware_diction=dict()
+goodware_diction=dict()
+malware_diction_prob=dict()
+goodware_diction_prob=dict()
+
+
+
+
+# In[5]:
+
+
+hash_tags("LEARNING TRIP START",'#')
+mw=0
+gw=0
+hash_tags("LOADING DATA",'-')
+for i in range(num_learn):
+    
+    path=path_feature+list_files[i]
+  
+    F = open (path,'r')
+     
+    if  list_files[i] in hash_def :
+       mw+=1
+       line=F.readline()
+       while(line!=''):
+                malware_content_list.append(line.replace("\n",""))
+                line = F.readline()
+
+    else:
+       gw+=1
+       line=F.readline()
+       while(line!=''):
+                goodware_content_list.append(line.replace("\n",""))
+                line = F.readline()
+   
+    F.close()
+print("\n")
+
+hash_tags('','-')
+boi_malware = len(malware_content_list)           
+
+print("Dictionary Elaboration Malware: ",end='')
+malware_diction=Counter(malware_content_list)
+print("FATTO")
+
+print("\n")
+
+print("Dictionary Elaboration Goodware: ",end='')
+boi_goodware = len(goodware_content_list)            
+goodware_diction=Counter(goodware_content_list)
+print("FATTO")
+
+print("\n")
+'''
+with open('goodware_diction.json', 'w') as f:
+    json.dump(goodware_diction, f)
+with open('malware_diction.json', 'w') as f:
+    json.dump(malware_diction, f)
+'''
+hash_tags("LEARNING TRIP END",'#')
+
+if( "" in goodware_diction):goodware_diction.pop("")
+if( "" in malware_diction):malware_diction.pop("")
+count_wrong = 0
+count_right = 0
+
+TN = 0
+TP = 0
+FN = 0
+FP = 0
+
+hash_tags('TESTING','*')
+#if num_test==0: num_test = 10000
+num_test = int(percent_testing * total_set)
+#print(num_test)
+    
+
+
+# In[6]:
+
+
+for i in range(num_test):
+  path=path_feature+list_files[i]
+  if list_files[i] in hash_def: real = True
+  else: real=False
+  
+  F = open (path,'r')
+  line=F.readline()
+   
+  prob_mal= 1
+  prob_good= 1
+
+
+  while(line!=''):
+   line=line.replace("\n","")
+#    alfa = 1
+   if line in goodware_diction: 
+        prob_good *= (goodware_diction[line])/(boi_goodware)
+   else:
+        prob_good = 0
+        prob_mal = 1
+   if line in malware_diction:  
+    prob_mal *= (malware_diction[line])/(boi_malware)
+   else:
+        prob_mal = 0
+        prob_good = 1
+   line = F.readline()
+#    alfa = (prob_good/(prob_good+prob_mal))
+   
+
+  # prob_mal *= mw/(mw+gw)
+  # prob_good *= gw/(mw+gw)
+
+#   if prob_mal == 1: prob_mal=0
+#   if prob_good == 1: prob_good=0
+
+  if prob_mal < prob_good : res=False
+  else:  res=True
+
+  if res==True and real==False  :  FP += 1 
+  if res==True and real==True   :  TP += 1
+  if res==False and real==True  :  FN += 1
+  if res==False and real==False :  TN += 1
+
+  if res!=real : 
+    count_wrong+=1 
+  else:
+    count_right+=1
+  
+  
+
+malware_stimati = mw/(mw+gw)
+goodware_stimati = gw/(mw+gw)
+
+prob_mal = TP/(TN+TP)
+prob_good = TN/(TN+TP)
+precision = TP/(TP+FP)
+recall = TP/(TP+FN)
+accuracy = count_right/(count_right+count_wrong)
+fscore = 2*precision*recall/(precision+recall)
+print("aaa", mw, gw)
+print("Testing on: ", num_test) 
+print("Wrong-Error: "+str(count_wrong)+" [{:.2%}]".format((count_wrong/num_test)))
+print("Accuracy: "+str(count_right)+" [{:.2%}]".format((count_right/num_test)))
+print("\n")
+print('TP, TN FP, FN\n', TP, TN, FP, FN)
+print("precision: \n", precision)
+print("recall: \n", recall)
+print("fscore: \n", fscore)
+print("accuracy true: ", accuracy)
+hash_tags('END','*')
+print("\n\n")
+#PRECISION = TP/TP+FP
+#RECALL TP/TP+FN
+#FSCORE 2*PRECISION*RECALL/PRECISION+RECALL
+
+
+# In[5]:
+
+
+y_actu = pd.Series([mw, gw], name='Actual')
+y_pred = pd.Series([TP+FN, TN+FP], name='Predicted')
+df_confusion = pd.crosstab(y_actu, y_pred)
+df_confusion
+
+
+# In[6]:
+
+
+def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
+    plt.matshow(df_confusion, cmap=cmap) # imshow
+    #plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(df_confusion.columns))
+    plt.xticks(tick_marks, df_confusion.columns, rotation=45)
+    plt.yticks(tick_marks, df_confusion.index)
+    #plt.tight_layout()
+    plt.ylabel(df_confusion.index.name)
+    plt.xlabel(df_confusion.columns.name)
+
+plot_confusion_matrix(df_confusion)
+
