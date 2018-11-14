@@ -72,9 +72,9 @@ def csv_read(path):
 # In[4]:
 
 
-path_feature = '/Users/Carmelo/Desktop/drebin/feature_vector3/'
+path_feature = '/Users/user/Desktop/drebin/path/'
 #path_feature = '/home/parallels/Documents/Homework/drebin/prova/'
-path_csv  = '/Users/Carmelo/Desktop/drebin/family.csv'
+path_csv  = '/Users/user/Desktop/drebin/family.csv'
 
 list_files = [f for f in listdir(path_feature) if isfile(join(path_feature, f))]
 print("\n\nLOADING CVS ...  ",end='')
