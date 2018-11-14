@@ -184,8 +184,8 @@ for i in range(num_test):
   F = open (path,'r')
   line=F.readline()
    
-  prob_mal= 1
-  prob_good= 1
+  prob_mal=  mw/(mw+gw)
+  prob_good= gw/(mw+gw)
 
 
   while(line!=''):
@@ -196,11 +196,13 @@ for i in range(num_test):
    else:
         prob_good = 0
         prob_mal = 1
+        break
    if line in malware_diction:  
     prob_mal *= (malware_diction[line])/(boi_malware)
    else:
         prob_mal = 0
         prob_good = 1
+        break
    line = F.readline()
 #    alfa = (prob_good/(prob_good+prob_mal))
    
@@ -262,6 +264,7 @@ df_confusion
 
 
 # In[6]:
+
 
 
 def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
